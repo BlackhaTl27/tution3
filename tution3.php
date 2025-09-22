@@ -2,8 +2,8 @@
 $csv_file = 'submissions.csv';
 $success = false;
 
-// Handle CSV saving locally
-if($_SERVER['REQUEST_METHOD']=='POST' && isset($_POST['save_csv'])){
+// Handle form submission
+if($_SERVER['REQUEST_METHOD']=='POST' && isset($_POST['submit_form'])){
     $name = htmlspecialchars($_POST['name']);
     $email = htmlspecialchars($_POST['email']);
     $phone = htmlspecialchars($_POST['phone']);
@@ -16,12 +16,29 @@ if($_SERVER['REQUEST_METHOD']=='POST' && isset($_POST['save_csv'])){
     fputcsv($fp, $data);
     fclose($fp);
 
+    // Send mail to owner
+    $owner_email = "info@itcoaching.com"; // Change this
+    $subject = "New Enrollment: $name";
+    $body = "Name: $name\nEmail: $email\nPhone: $phone\nCourse: $course\nMessage: $message";
+    $headers = "From: $email";
+    mail($owner_email,$subject,$body,$headers);
+
     $success = true;
 }
 
 // Handle CSV download
+if(isset($_GET['download_csv']) && $_GET['download_csv']=='1'){
+    if(file_exists($csv_file)){
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="submissions.csv"');
+        readfile($csv_file);
+        exit;
+    }
+}
+
+// Admin Panel
 $show_admin = false;
-$admin_password = "admin123"; // Change this
+$admin_password = "biswa24"; // Change this
 $submissions = [];
 
 if(isset($_POST['admin_password']) && $_POST['admin_password'] === $admin_password){
@@ -62,12 +79,14 @@ input,select,textarea,button{padding:10px;border-radius:6px;border:1px solid #cc
 button{background:#0b76ef;color:#fff;border:none;cursor:pointer;transition:0.3s;}
 button:hover{background:#095ab5;}
 footer{padding:15px;text-align:center;background:#fff;margin-top:20px;}
-.success-msg{color:green;margin-bottom:10px;font-size:18px;padding:15px;background:#d1fae5;border-radius:6px;text-align:center;}
+.success-msg{color:green;margin-bottom:10px;}
 .admin-table{margin-top:15px;border:1px solid #ccc;}
 .admin-table th, .admin-table td{border:1px solid #ccc;padding:8px;}
 .download-btn{background:green;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;}
+/* Floating WhatsApp button */
 .whatsapp-float{position:fixed;width:60px;height:60px;bottom:20px;right:20px;background:#25D366;color:#fff;border-radius:50%;text-align:center;font-size:30px;box-shadow:2px 2px 5px rgba(0,0,0,0.3);z-index:100;}
 .whatsapp-float i{margin-top:14px;}
+/* Responsive */
 @media(max-width:768px){
   nav ul{display:none;}
   .features{flex-direction:column;}
@@ -162,37 +181,31 @@ footer{padding:15px;text-align:center;background:#fff;margin-top:20px;}
 
   <section id="contact">
     <h2>Contact & Enroll</h2>
-
-    <?php if($success): ?>
-      <div class="success-msg">
-        <h1>Thank You!</h1>
-        <p>Your enrollment has been received. Our team will contact you soon.</p>
-      </div>
-    <?php else: ?>
-      <!-- Formspree Form -->
-      <form method="POST" action="https://formspree.io/f/abcdxyz">
-        <input type="hidden" name="save_csv" value="1">
-        <input type="text" name="name" placeholder="Full Name" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="tel" name="phone" placeholder="Phone" required>
-        <select name="course">
-          <option>Web Development</option>
-          <option>Python & Data Science</option>
-          <option>Cybersecurity</option>
-        </select>
-        <textarea name="message" rows="4" placeholder="Message"></textarea>
-        <button type="submit">Submit</button>
-      </form>
-    <?php endif; ?>
+    <?php if($success) echo "<div class='success-msg'>Your submission has been received!</div>"; ?>
+    <form method="post">
+      <input type="hidden" name="submit_form" value="1">
+      <input type="text" name="name" placeholder="Full Name" required>
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="tel" name="phone" placeholder="Phone" required>
+      <select name="course">
+        <option>Web Development</option>
+        <option>Python & Data Science</option>
+        <option>Cybersecurity</option>
+      </select>
+      <textarea name="message" rows="4" placeholder="Message"></textarea>
+      <button type="submit">Submit</button>
+    </form>
   </section>
 </main>
 
+<!-- Floating WhatsApp Button -->
 <a href="https://wa.me/911234567890" target="_blank" class="whatsapp-float"><i>💬</i></a>
 
 <footer>
   <p>© IT Coaching Institute • All rights reserved</p>
 </footer>
 
+<!-- Admin login form -->
 <div style="position:fixed;bottom:10px;right:10px;background:#fff;padding:10px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
   <form method="post">
     <input type="password" name="admin_password" placeholder="Admin Password">
@@ -200,5 +213,6 @@ footer{padding:15px;text-align:center;background:#fff;margin-top:20px;}
   </form>
 </div>
 
+<?php endif; ?>
 </body>
 </html>
